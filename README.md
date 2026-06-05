@@ -23,25 +23,34 @@ bash <(curl -Ls https://raw.githubusercontent.com/AI-Fans-X/egress-check/main/ip
 
 <sub>不想进菜单也可以直接跑完整检测：`bash <(curl -Ls https://raw.githubusercontent.com/AI-Fans-X/egress-check/main/ip.sh)`</sub>
 
+## v2.3 新增
+
+- 新增 `延迟` 列：`<50ms` 绿色，`50-200ms` 黄色，`>200ms` 棕色
+- 增加多地区电商域名：Shopee、Lazada、Temu、SHEIN、Rakuten、Coupang、Mercado Libre 等
+- mtr 探测重试从 2 次增加到 4 次，降低偶发“无公网跳”失败
+
 ## 适合谁用
 
 很多商家宣称自己的家宽服务没有做分流，或者并没有明确标记。用户花了大价钱，以为自己用了家宽，但社交媒体账号仍然被风控，并且完全不知道问题出在哪里。
 
-这种情况下，需要确认商家是否对某些流量做了“线路优化 / 分流”。本工具会批量检测近 100 个主流服务，帮助你快速验证服务器是否存在分流情况。
+这种情况下，需要确认商家是否对某些流量做了“线路优化 / 分流”。本工具会批量检测 100+ 个主流服务，帮助你快速验证服务器是否存在分流情况。
 
 ## 怎么看结果
 
 - 绿色：和默认出口同一条线路
 - 黄色 `⮜ 分流`：走了不同出口线路
+- 延迟列：`<50ms` 绿色，`50-200ms` 黄色，`>200ms` 棕色
 - 底部汇总：告诉你一共分了几条线，每条线走哪些域名
 
 ```text
 Social
-  ●  twitter.com       203.x.x.1     TW   AS4780 Digital United Inc.
-  ●  facebook.com      104.28.0.0    US   AS13335 Cloudflare, Inc.    ⮜ 分流
-  ●  instagram.com     104.28.0.0    US   AS13335 Cloudflare, Inc.    ⮜ 分流
+      域名                       首个公网跳         延迟       国家  ASN / ISP
+  ●  twitter.com               203.x.x.1        18.4ms     TW   AS4780 Digital United Inc.
+  ●  facebook.com              104.28.0.0       86.7ms     US   AS13335 Cloudflare, Inc.    ⮜ 分流
+  ●  instagram.com             104.28.0.0       91.2ms     US   AS13335 Cloudflare, Inc.    ⮜ 分流
 
 IPv4 线路分流汇总 (基准 = 默认出口 AS4780)
+────────────────────────────────────────────────────────────────────────
 ● Digital United Inc. (AS4780 · TW) 85 域名 ✓ 符合预期 (未分流)
 ● Cloudflare, Inc. (AS13335 · US) 8 域名 ⚠ 存在分流
 ```

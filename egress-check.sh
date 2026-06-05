@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ─────────────────────────────────────────────────────────────────────────────
-# 分流检测 Egress-Check v2.2      鸣谢：https://ip.net.coffee
+# 分流检测 Egress-Check v2.3      鸣谢：https://ip.net.coffee
 #
 # 用 mtr 取每个域名的"第一个公网跳", 按 ASN 自动分组上色, 直接可视化线路分流.
 # 不同 ASN = 不同出口线路 = 商家做了分流. 一眼看出分了几条线, 哪些域名走哪条.
@@ -18,7 +18,7 @@
 
 set -euo pipefail
 
-VERSION="2.2"
+VERSION="2.3"
 BRAND_URL="https://ip.net.coffee"
 
 # ─── 颜色 ──────────────────────────────────────────────────────────────────
@@ -28,10 +28,10 @@ set_colors() {
     if [[ $USE_COLOR -eq 1 ]]; then
         R=$'\e[0m'; BOLD=$'\e[1m'; DIM=$'\e[2m'
         RED=$'\e[31m'; GREEN=$'\e[32m'; YELLOW=$'\e[33m'
-        BLUE=$'\e[34m'; MAGENTA=$'\e[35m'; CYAN=$'\e[36m'; GRAY=$'\e[90m'
+        BLUE=$'\e[34m'; MAGENTA=$'\e[35m'; CYAN=$'\e[36m'; GRAY=$'\e[90m'; BROWN=$'\e[38;5;130m'
     else
         R=""; BOLD=""; DIM=""
-        RED=""; GREEN=""; YELLOW=""; BLUE=""; MAGENTA=""; CYAN=""; GRAY=""
+        RED=""; GREEN=""; YELLOW=""; BLUE=""; MAGENTA=""; CYAN=""; GRAY=""; BROWN=""
     fi
 }
 set_colors
@@ -54,8 +54,10 @@ PASS_MODE="auto"
 OUTPUT_JSON=0
 INTERACTIVE=0
 ONLY_CAT=""
-MTR_TIMEOUT=15
-MTR_MAXTTL=8
+MTR_TIMEOUT=20
+MTR_MAXTTL=12
+MTR_COUNT=3
+MTR_ATTEMPTS=4
 API_TIMEOUT=5
 ENV_TIMEOUT=5
 UA="egress-check/${VERSION} (+${BRAND_URL})"
@@ -146,8 +148,30 @@ Ecommerce|aliexpress.com|||AliExpress
 Ecommerce|taobao.com|||Taobao
 Ecommerce|tmall.com|||Tmall
 Ecommerce|jd.com|||JD
+Ecommerce|temu.com|||Temu
+Ecommerce|shein.com|||SHEIN
+Ecommerce|walmart.com|||Walmart
+Ecommerce|target.com|||Target
+Ecommerce|etsy.com|||Etsy
+Ecommerce|rakuten.co.jp|||Rakuten Japan
+Ecommerce|coupang.com|||Coupang
+Ecommerce|mercadolibre.com|||Mercado Libre
+Ecommerce|shopee.com|||Shopee Global
 Ecommerce|shopee.sg|||Shopee Singapore
+Ecommerce|shopee.tw|||Shopee Taiwan
+Ecommerce|shopee.co.id|||Shopee Indonesia
+Ecommerce|shopee.co.th|||Shopee Thailand
+Ecommerce|shopee.vn|||Shopee Vietnam
+Ecommerce|shopee.com.my|||Shopee Malaysia
+Ecommerce|shopee.ph|||Shopee Philippines
+Ecommerce|shopee.com.br|||Shopee Brazil
+Ecommerce|lazada.com|||Lazada Global
 Ecommerce|lazada.sg|||Lazada Singapore
+Ecommerce|lazada.co.id|||Lazada Indonesia
+Ecommerce|lazada.com.my|||Lazada Malaysia
+Ecommerce|lazada.co.th|||Lazada Thailand
+Ecommerce|lazada.vn|||Lazada Vietnam
+Ecommerce|lazada.com.ph|||Lazada Philippines
 China|qq.com|||Tencent QQ
 China|wechat.com|||WeChat
 China|weibo.com|||Weibo
@@ -400,26 +424,42 @@ ip_family() {
 }
 
 first_public_hop() {
-    local ip_flag="$1" domain="$2" output ip attempt found
+    local ip_flag="$1" domain="$2" output attempt parsed ip latency
     is_valid_domain "$domain" || { printf ''; return; }
-    for attempt in 1 2; do
-        output=$(timeout "$MTR_TIMEOUT" mtr "$ip_flag" -r -n -c 1 -m "$MTR_MAXTTL" "$domain" 2>/dev/null || true)
-        found=""
+    for ((attempt=1; attempt<=MTR_ATTEMPTS; attempt++)); do
+        output=$(timeout "$MTR_TIMEOUT" mtr "$ip_flag" -r -n -c "$MTR_COUNT" -m "$MTR_MAXTTL" "$domain" 2>/dev/null || true)
         if [[ "$ip_flag" == "-6" ]]; then
-            while IFS= read -r ip; do
-                [[ -z "$ip" ]] && continue
-                is_private_v6 "$ip" && continue
-                found="$ip"; break
-            done < <(printf '%s\n' "$output" | grep -oE '([0-9a-fA-F]{1,4}:){2,7}[0-9a-fA-F:]+' || true)
+            parsed=$(printf '%s\n' "$output" | awk '
+                function private_v6(ip) { return (ip ~ /^[Ff][Ee]80:/ || ip ~ /^[Ff][CcDd]/ || ip == "::1") }
+                /^[[:space:]]*[0-9]+[.|][|]?--/ {
+                    for (i=1; i<=NF; i++) {
+                        if ($i ~ /^([0-9a-fA-F]{1,4}:){2,7}[0-9a-fA-F:]+$/ && !private_v6($i)) {
+                            avg=$(i+4)
+                            if (avg !~ /^[0-9.]+$/) avg="-"
+                            print $i "\t" avg
+                            exit
+                        }
+                    }
+                }' | head -n1)
         else
-            while IFS= read -r ip; do
-                [[ -z "$ip" ]] && continue
-                is_private_v4 "$ip" && continue
-                found="$ip"; break
-            done < <(printf '%s\n' "$output" | grep -oE '\b([0-9]{1,3}\.){3}[0-9]{1,3}\b' || true)
+            parsed=$(printf '%s\n' "$output" | awk '
+                function private_v4(ip) { return (ip ~ /^10\./ || ip ~ /^192\.168\./ || ip ~ /^172\.(1[6-9]|2[0-9]|3[0-1])\./ || ip ~ /^127\./ || ip ~ /^100\.(6[4-9]|[7-9][0-9]|1[0-1][0-9]|12[0-7])\./ || ip ~ /^169\.254\./ || ip ~ /^0\./ || ip ~ /^22[4-9]\./ || ip ~ /^2[3-5][0-9]\./) }
+                /^[[:space:]]*[0-9]+[.|][|]?--/ {
+                    for (i=1; i<=NF; i++) {
+                        if ($i ~ /^([0-9]{1,3}\.){3}[0-9]{1,3}$/ && !private_v4($i)) {
+                            avg=$(i+4)
+                            if (avg !~ /^[0-9.]+$/) avg="-"
+                            print $i "\t" avg
+                            exit
+                        }
+                    }
+                }' | head -n1)
         fi
-        [[ -n "$found" ]] && { printf '%s' "$found"; return; }
-        sleep 0.5
+        if [[ -n "$parsed" ]]; then
+            IFS=$'\t' read -r ip latency <<< "$parsed"
+            [[ -n "$ip" ]] && { printf '%s\t%s' "$ip" "${latency:-"-"}"; return; }
+        fi
+        sleep "$attempt"
     done
 }
 
@@ -497,15 +537,29 @@ print_pass_header() {
 print_category_header() {
     [[ $OUTPUT_JSON -eq 1 ]] && return 0
     printf "\n    %s%s%s\n" "$BOLD" "$1" "$R"
+    printf "      %s   %-24s  %-15s  %-9s  %-3s  %s%s\n" "$DIM" "域名" "首个公网跳" "延迟" "国家" "ASN / ISP" "$R"
 }
+format_latency() {
+    local latency="${1:-"-"}" color="$GRAY"
+    if [[ "$latency" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
+        if awk -v v="$latency" 'BEGIN { exit !(v < 50) }'; then color="$GREEN"
+        elif awk -v v="$latency" 'BEGIN { exit !(v < 200) }'; then color="$YELLOW"
+        else color="$BROWN"; fi
+        printf '%s%.1fms%s' "$color" "$latency" "$R"
+    else
+        printf '%s-%s' "$GRAY" "$R"
+    fi
+}
+
 print_result_row() {
     [[ $OUTPUT_JSON -eq 1 ]] && return 0
-    local marker="$1" domain="$2" ip="$3" cc="$4" asn="$5" isp="$6" is_split="${7:-0}" asn_isp
+    local marker="$1" domain="$2" ip="$3" latency="$4" cc="$5" asn="$6" isp="$7" is_split="${8:-0}" asn_isp latency_disp
     if [[ -z "$asn" ]]; then asn_isp="$isp"; else asn_isp="AS${asn} ${isp}"; fi
+    latency_disp="$(format_latency "$latency")"
     if [[ "$is_split" == "1" ]]; then
-        printf "      %b  %s%-24s  %-15s  %-3s  %-34s  ⮜ 分流%s\n" "$marker" "$YELLOW" "$domain" "$ip" "$cc" "${asn_isp:0:34}" "$R"
+        printf "      %b  %s%-24s  %-15s  %-9b  %-3s  %-34s  ⮜ 分流%s\n" "$marker" "$YELLOW" "$domain" "$ip" "$latency_disp" "$cc" "${asn_isp:0:34}" "$R"
     else
-        printf "      %b  %-24s  %-15s  %-3s  %s%s%s\n" "$marker" "$domain" "$ip" "$cc" "$DIM" "${asn_isp:0:34}" "$R"
+        printf "      %b  %-24s  %-15s  %-9b  %-3s  %s%s%s\n" "$marker" "$domain" "$ip" "$latency_disp" "$cc" "$DIM" "${asn_isp:0:34}" "$R"
     fi
 }
 format_elapsed() {
@@ -574,13 +628,16 @@ run_check_pass() {
         local idx
         for idx in "${gidxs[@]}"; do
         local cat_v="$cat" domain="${DOMAINS[$idx]}" note="${NOTES[$idx]}"
-        local hop; hop="$(cat "$out_dir/$idx" 2>/dev/null || true)"
+        local hop_line hop latency
+        hop_line="$(cat "$out_dir/$idx" 2>/dev/null || true)"
+        IFS=$'\t' read -r hop latency <<< "$hop_line"
+        latency="${latency:-"-"}"
         if [[ -z "$hop" ]]; then
             eval "${prefix}_DOWN=\$((${prefix}_DOWN+1))"
-            [[ $OUTPUT_JSON -eq 0 ]] && print_result_row "$SYM_DOWN" "$domain" "-" "-" "" "探测失败 / 无公网跳" 0
+            [[ $OUTPUT_JSON -eq 0 ]] && print_result_row "$SYM_DOWN" "$domain" "-" "-" "-" "" "探测失败 / 无公网跳" 0
             [[ $first_json -eq 0 ]] && printf ',\n' >> "$tmp_file"; first_json=0
             jq -n --arg c "$cat_v" --arg d "$domain" --arg note "$note" \
-                '{category:$c, domain:$d, status:"down", first_hop:null, asn:null, isp:null, country:null, split:null, note:$note}' >> "$tmp_file"
+                '{category:$c, domain:$d, status:"down", first_hop:null, latency_ms:null, asn:null, isp:null, country:null, split:null, note:$note}' >> "$tmp_file"
             continue
         fi
         local data asn isp country
@@ -599,15 +656,16 @@ run_check_pass() {
         [[ $is_split -eq 1 ]] && split_domain_count=$((split_domain_count+1))
         local marker
         if [[ $is_split -eq 1 ]]; then marker="${SPLIT_COLORS[${route_scidx[$key]} % split_color_n]}●${R}"; else marker="${GREEN}●${R}"; fi
-        [[ $OUTPUT_JSON -eq 0 ]] && print_result_row "$marker" "$domain" "$hop" "$country" "$asn" "$isp" "$is_split"
+        [[ $OUTPUT_JSON -eq 0 ]] && print_result_row "$marker" "$domain" "$hop" "$latency" "$country" "$asn" "$isp" "$is_split"
         [[ $first_json -eq 0 ]] && printf ',\n' >> "$tmp_file"; first_json=0
         local split_json="false"; [[ $is_split -eq 1 ]] && split_json="true"
+        local latency_json="null"; [[ "$latency" =~ ^[0-9]+([.][0-9]+)?$ ]] && latency_json="$latency"
         if [[ -z "$asn" ]]; then
-            jq -n --arg c "$cat_v" --arg d "$domain" --arg h "$hop" --arg isp "$isp" --arg cc "$country" --argjson sp "$split_json" --arg note "$note" \
-                '{category:$c, domain:$d, status:"ok", first_hop:$h, asn:null, isp:$isp, country:$cc, split:$sp, note:$note}' >> "$tmp_file"
+            jq -n --arg c "$cat_v" --arg d "$domain" --arg h "$hop" --argjson lat "$latency_json" --arg isp "$isp" --arg cc "$country" --argjson sp "$split_json" --arg note "$note" \
+                '{category:$c, domain:$d, status:"ok", first_hop:$h, latency_ms:$lat, asn:null, isp:$isp, country:$cc, split:$sp, note:$note}' >> "$tmp_file"
         else
-            jq -n --arg c "$cat_v" --arg d "$domain" --arg h "$hop" --arg asn "$asn" --arg isp "$isp" --arg cc "$country" --argjson sp "$split_json" --arg note "$note" \
-                '{category:$c, domain:$d, status:"ok", first_hop:$h, asn:("AS"+$asn), isp:$isp, country:$cc, split:$sp, note:$note}' >> "$tmp_file"
+            jq -n --arg c "$cat_v" --arg d "$domain" --arg h "$hop" --argjson lat "$latency_json" --arg asn "$asn" --arg isp "$isp" --arg cc "$country" --argjson sp "$split_json" --arg note "$note" \
+                '{category:$c, domain:$d, status:"ok", first_hop:$h, latency_ms:$lat, asn:("AS"+$asn), isp:$isp, country:$cc, split:$sp, note:$note}' >> "$tmp_file"
         fi
         done
     done
@@ -617,8 +675,9 @@ run_check_pass() {
     eval "${prefix}_ROUTE_COUNT=$route_count"
     eval "${prefix}_SPLIT_DOMAINS=$split_domain_count"
     if [[ $OUTPUT_JSON -eq 0 && $route_count -gt 0 ]]; then
-        printf "\n  %s%s 线路分流汇总%s  %s(基准 = 默认出口 %s)%s\n" "$BOLD" "$label" "$R" "$DIM" "${base_asn:+AS$base_asn}" "$R"
-        printf "  %s\n" "$(rule_single 60)"
+        printf "\n  %s\n" "$(rule_single 72)"
+        printf "  %s%s 线路分流汇总%s  %s(基准 = 默认出口 %s)%s\n" "$BOLD" "$label" "$R" "$DIM" "${base_asn:+AS$base_asn}" "$R"
+        printf "  %s\n" "$(rule_single 72)"
         local key round
         for round in base split; do
             for key in "${!route_split[@]}"; do
@@ -643,9 +702,9 @@ run_check_pass() {
                     if [[ $cnt -eq 4 ]]; then printf "%s%s%s\n" "$linecol" "$lineout" "$R"; lineout="      "; cnt=0; fi
                 done
                 [[ $cnt -gt 0 ]] && printf "%s%s%s\n" "$linecol" "$lineout" "$R"
+                printf "\n"
             done
         done
-        printf "\n"
         if [[ $split_idx -ge 1 ]]; then
             printf "  %s%s %s检测到分流: %d 条非默认线路, %d 个域名被分流到其他出口%s\n" "$BOLD" "$SYM_WARN" "$YELLOW" "$split_idx" "$split_domain_count" "$R"
         else
