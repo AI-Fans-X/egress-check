@@ -23,7 +23,7 @@ bash <(curl -Ls https://raw.githubusercontent.com/AI-Fans-X/egress-check/main/ip
 
 ```text
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-分流检测 Egress-Check v2.2 https://ip.net.coffee
+分流检测 Egress-Check v2.2  鸣谢：https://ip.net.coffee
 host: my-vps 2026-06-05T20:00:00+08:00
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 

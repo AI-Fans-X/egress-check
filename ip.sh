@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ─────────────────────────────────────────────────────────────────────────────
-# 分流检测 Egress-Check v2.2      https://ip.net.coffee
+# 分流检测 Egress-Check v2.2      鸣谢：https://ip.net.coffee
 #
 # 用 mtr 取每个域名的"第一个公网跳", 按 ASN 自动分组上色, 直接可视化线路分流.
 # 不同 ASN = 不同出口线路 = 商家做了分流. 一眼看出分了几条线, 哪些域名走哪条.
@@ -160,7 +160,7 @@ EOF
 
 usage() {
     cat <<EOF
-分流检测 Egress-Check v${VERSION}   ${BRAND_URL}
+分流检测 Egress-Check v${VERSION}   鸣谢：${BRAND_URL}
 Usage: $(basename "$0") [options]
   (no flag)      自动: 网络环境 + IPv4 线路分流 + IPv6 线路分流
   -I, --interactive
@@ -464,7 +464,7 @@ rule_double() { printf "%s%s%s\n" "$CYAN" "$(repeat_char "━" "${1:-72}")" "$R"
 rule_single() { printf "%s%s%s" "$GRAY" "$(repeat_char "─" "${1:-60}")" "$R"; }
 print_banner() {
     rule_double 72
-    printf "  %s分流检测%s  %sEgress-Check v%s%s     %s%s%s\n" "$BOLD" "$R" "$CYAN" "$VERSION" "$R" "$GRAY" "$BRAND_URL" "$R"
+    printf "  %s分流检测%s  %sEgress-Check v%s%s     %s鸣谢：%s%s\n" "$BOLD" "$R" "$CYAN" "$VERSION" "$R" "$GRAY" "$BRAND_URL" "$R"
     printf "  %shost%s: %s%s%s     %s%s%s\n" "$DIM" "$R" "$BOLD" "$1" "$R" "$GRAY" "$2" "$R"
     rule_double 72
 }
