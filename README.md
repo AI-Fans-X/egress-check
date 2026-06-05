@@ -39,6 +39,8 @@ bash <(curl -Ls https://raw.githubusercontent.com/AI-Fans-X/egress-check/main/ip
 
 这种情况下，需要确认商家是否对某些流量做了“线路优化 / 分流”。本工具会批量检测 100+ 个主流服务，帮助你快速验证服务器是否存在分流情况。
 
+鸣谢：[https://ip.net.coffee](https://ip.net.coffee)
+
 ## 怎么看结果
 
 - 绿色：和默认出口同一条线路
@@ -65,8 +67,6 @@ IPv4 线路分流汇总 (基准 = 默认出口 AS4780)
 
 - 同一 ASN = 同一条出口线路
 - 不同 ASN = 走了不同线路 = 存在分流
-
-<sub>鸣谢：[https://ip.net.coffee](https://ip.net.coffee)</sub>
 
 <details>
 <summary>本地安装和高级用法</summary>
