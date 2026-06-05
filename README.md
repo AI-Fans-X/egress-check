@@ -21,7 +21,11 @@ bash <(curl -Ls https://raw.githubusercontent.com/AI-Fans-X/egress-check/main/ip
 6) 高并发日志模式    并发 10 + 关闭颜色
 ```
 
-<sub>不想进菜单也可以直接跑完整检测：`bash <(curl -Ls https://raw.githubusercontent.com/AI-Fans-X/egress-check/main/ip.sh)`</sub>
+直接完整检测：
+
+```bash
+bash <(curl -Ls https://raw.githubusercontent.com/AI-Fans-X/egress-check/main/ip.sh)
+```
 
 ## v2.3 新增
 
