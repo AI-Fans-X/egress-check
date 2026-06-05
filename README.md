@@ -2,6 +2,8 @@
 
 一条命令检测服务器 / 家宽出口是否存在分流，快速看出访问 Meta、流媒体、金融、电商等平台时，实际走的是不是同一条线路。
 
+它适合用来验收“家宽 VPS / 原生家宽 / 不分流线路”这类服务：不用猜、不用问客服，直接把 100+ 个常见平台的出口线路、ASN 和延迟跑出来。
+
 ## 一键完成检测
 
 复制下面这一行到 SSH 里运行：
@@ -26,6 +28,14 @@ bash <(curl -Ls https://raw.githubusercontent.com/AI-Fans-X/egress-check/main/ip
 ```bash
 bash <(curl -Ls https://raw.githubusercontent.com/AI-Fans-X/egress-check/main/ip.sh)
 ```
+
+## 核心卖点
+
+- **一键验收家宽线路**：复制命令到 SSH，按菜单选择即可检测。
+- **直接抓分流证据**：哪些域名走默认出口、哪些域名被甩到其他 ASN，一屏看清。
+- **覆盖真实使用场景**：AI、社交、流媒体、金融、电商、开发者平台、云服务、游戏等 100+ 域名。
+- **同时看延迟质量**：不只判断有没有分流，还能看到每个域名的 mtr 平均延迟。
+- **适合排查账号风控**：当社交媒体、电商、金融平台账号异常时，可以快速确认线路是否和商家承诺一致。
 
 ## v2.3 新增
 
@@ -109,6 +119,52 @@ grep -nE 'crontab|authorized_keys|nohup|disown|/dev/tcp|bash -i|curl.*\|.*sh' eg
 ```
 
 不会写 crontab，不碰 SSH，无反向连接，无下载执行。临时文件写入 `~/.cache/egress-check/`，退出自动清理。
+
+</details>
+
+<details>
+<summary>运行环境和依赖说明</summary>
+
+当前脚本主要支持 Linux VPS / Linux 服务器，包括常见发行版：
+
+- Debian / Ubuntu：`apt-get`
+- Alpine：`apk`
+- CentOS / RHEL：`yum`
+- Fedora / Rocky / AlmaLinux：`dnf`
+- Arch Linux：`pacman`
+
+不适合直接在 Windows CMD / PowerShell 里运行；如果是 Windows，需要 WSL 这类 Linux 环境。
+
+脚本会自动检测并尝试安装 `mtr`：
+
+```text
+apt-get install mtr-tiny / mtr
+apk add mtr
+yum install mtr
+dnf install mtr
+pacman -Sy mtr
+```
+
+自动安装需要满足两个条件：
+
+- 当前用户是 `root`，或者系统有 `sudo`
+- 服务器能正常访问软件源
+
+如果没有 root/sudo，脚本会提示手动安装。
+
+以下依赖目前只检测，不自动安装：
+
+```text
+curl
+jq
+timeout
+awk
+grep
+```
+
+大多数 VPS 默认已有 `curl`、`awk`、`grep`、`timeout`，极简系统可能需要手动安装 `jq`。
+
+如果商家禁用了 ICMP / traceroute / mtr 所需能力，或者容器环境不允许 raw socket，即使依赖齐全也可能探测失败。这属于运行环境限制，不是脚本逻辑问题。
 
 </details>
 
