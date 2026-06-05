@@ -16,7 +16,7 @@ bash <(curl -Ls https://raw.githubusercontent.com/AI-Fans-X/egress-check/main/ip
 1) 默认完整检测      网络环境 + IPv4 + IPv6
 2) 只检测 IPv4
 3) 只检测 IPv6
-4) 只检测指定分类    AI / Social / Streaming / Search / Developer / Cloud / Crypto / Gaming / Ecommerce / China
+4) 只检测指定分类    AI / Social / Streaming / Search / Developer / Cloud / Crypto / Gaming
 5) JSON 输出         适合 cron / 监控
 6) 高并发日志模式    并发 10 + 关闭颜色
 ```
