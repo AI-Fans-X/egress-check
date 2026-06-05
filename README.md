@@ -3,7 +3,7 @@
 服务器出口线路分流自查工具。在 SSH 上跑一条命令，自动检测这台机器访问各大网站时实际走了几条出口线路，一眼看出商家有没有做分流、哪些域名走了不同的国际线路。
 
 ```bash
-bash <(curl -Ls https://raw.githubusercontent.com/AI-Fans-X/egress-check/main/main.sh) -I
+bash <(curl -Ls https://raw.githubusercontent.com/AI-Fans-X/egress-check/main/ip.sh) -I
 ```
 
 `-I` 会打开交互菜单，输入 `1-6` 就能选择检测模式。以后如果你把短域名指向这个脚本，也可以做成类似 `bash <(curl -Ls https://check.place) -I` 这样的短命令。
@@ -64,7 +64,7 @@ facebook.com instagram.com threads.net whatsapp.com ...
 交互菜单版，适合第一次使用：
 
 ```bash
-bash <(curl -Ls https://raw.githubusercontent.com/AI-Fans-X/egress-check/main/main.sh) -I
+bash <(curl -Ls https://raw.githubusercontent.com/AI-Fans-X/egress-check/main/ip.sh) -I
 ```
 
 菜单会显示：
@@ -81,13 +81,13 @@ bash <(curl -Ls https://raw.githubusercontent.com/AI-Fans-X/egress-check/main/ma
 不进菜单，直接跑完整检测：
 
 ```bash
-bash <(curl -Ls https://raw.githubusercontent.com/AI-Fans-X/egress-check/main/main.sh)
+bash <(curl -Ls https://raw.githubusercontent.com/AI-Fans-X/egress-check/main/ip.sh)
 ```
 
 如果你的系统不支持 `<(...)` 进程替换，也可以用管道方式：
 
 ```bash
-curl -Ls https://raw.githubusercontent.com/AI-Fans-X/egress-check/main/main.sh | bash -s -- -I
+curl -Ls https://raw.githubusercontent.com/AI-Fans-X/egress-check/main/ip.sh | bash -s -- -I
 ```
 
 ## 本地安装
