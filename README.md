@@ -9,7 +9,7 @@
 复制下面这一行到 SSH 里运行：
 
 ```bash
-bash <(curl -Ls https://raw.githubusercontent.com/AI-Fans-X/egress-check/main/ip.sh) -I
+bash <(curl -Ls https://raw.githubusercontent.com/AIFansX/egress-check/main/ip.sh) -I
 ```
 
 运行后输入 `1-6` 选择检测模式：
@@ -26,7 +26,7 @@ bash <(curl -Ls https://raw.githubusercontent.com/AI-Fans-X/egress-check/main/ip
 直接完整检测：
 
 ```bash
-bash <(curl -Ls https://raw.githubusercontent.com/AI-Fans-X/egress-check/main/ip.sh)
+bash <(curl -Ls https://raw.githubusercontent.com/AIFansX/egress-check/main/ip.sh)
 ```
 
 ## 核心卖点
@@ -74,7 +74,7 @@ IPv4 线路分流汇总 (基准 = 默认出口 AS4780)
 <summary>本地安装和高级用法</summary>
 
 ```bash
-git clone https://github.com/AI-Fans-X/egress-check.git
+git clone https://github.com/AIFansX/egress-check.git
 cd egress-check
 chmod +x egress-check.sh
 cp rules.conf.example rules.conf
