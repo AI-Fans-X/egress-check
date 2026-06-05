@@ -538,16 +538,35 @@ print_category_header() {
     [[ $OUTPUT_JSON -eq 1 ]] && return 0
     printf "\n    %s%s%s\n" "$BOLD" "$1" "$R"
 }
-format_latency() {
-    local latency="${1:-"-"}" color="$GRAY"
+latency_color() {
+    local latency="${1:-"-"}"
     if [[ "$latency" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
-        if awk -v v="$latency" 'BEGIN { exit !(v < 50) }'; then color="$GREEN"
-        elif awk -v v="$latency" 'BEGIN { exit !(v < 200) }'; then color="$YELLOW"
-        else color="$BROWN"; fi
-        printf '%s%.1fms%s' "$color" "$latency" "$R"
+        if awk -v v="$latency" 'BEGIN { exit !(v < 50) }'; then printf '%s' "$GREEN"
+        elif awk -v v="$latency" 'BEGIN { exit !(v < 200) }'; then printf '%s' "$YELLOW"
+        else printf '%s' "$BROWN"; fi
     else
-        printf '%s-%s' "$GRAY" "$R"
+        printf '%s' "$GRAY"
     fi
+}
+
+format_latency_text() {
+    local latency="${1:-"-"}"
+    if [[ "$latency" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
+        if awk -v v="$latency" 'BEGIN { exit !(v >= 1000) }'; then
+            printf '%9s' "999+ms"
+        else
+            printf '%7.1fms' "$latency"
+        fi
+    else
+        printf '%9s' "-"
+    fi
+}
+
+format_latency() {
+    local latency="${1:-"-"}" text color
+    text="$(format_latency_text "$latency")"
+    color="$(latency_color "$latency")"
+    printf '%s%s%s' "$color" "$text" "$R"
 }
 
 print_result_row() {
@@ -556,9 +575,9 @@ print_result_row() {
     if [[ -z "$asn" ]]; then asn_isp="$isp"; else asn_isp="AS${asn} ${isp}"; fi
     latency_disp="$(format_latency "$latency")"
     if [[ "$is_split" == "1" ]]; then
-        printf "      %b  %s%-24s  %-15s  %-9b  %-3s  %-34s  ⮜ 分流%s\n" "$marker" "$YELLOW" "$domain" "$ip" "$latency_disp" "$cc" "${asn_isp:0:34}" "$R"
+        printf "      %b  %s%-24s  %-15s  %b  %-3s  %-34s  ⮜ 分流%s\n" "$marker" "$YELLOW" "$domain" "$ip" "$latency_disp" "$cc" "${asn_isp:0:34}" "$R"
     else
-        printf "      %b  %-24s  %-15s  %-9b  %-3s  %s%s%s\n" "$marker" "$domain" "$ip" "$latency_disp" "$cc" "$DIM" "${asn_isp:0:34}" "$R"
+        printf "      %b  %-24s  %-15s  %b  %-3s  %s%s%s\n" "$marker" "$domain" "$ip" "$latency_disp" "$cc" "$DIM" "${asn_isp:0:34}" "$R"
     fi
 }
 format_elapsed() {
