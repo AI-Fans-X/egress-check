@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ─────────────────────────────────────────────────────────────────────────────
-# 家宽VPS分流一键自查检测 Egress-Check v2.6      鸣谢：https://ip.net.coffee
+# 家宽VPS分流一键自查检测 Egress-Check v2.7      鸣谢：https://ip.net.coffee
 #
 # 用 mtr 取每个域名的"第一个公网跳", 按 ASN 自动分组上色, 直接可视化线路分流.
 # 不同 ASN = 不同出口线路 = 商家做了分流. 一眼看出分了几条线, 哪些域名走哪条.
@@ -18,7 +18,7 @@
 
 set -euo pipefail
 
-VERSION="2.6"
+VERSION="2.7"
 BRAND_URL="https://ip.net.coffee"
 
 # ─── 颜色 ──────────────────────────────────────────────────────────────────
@@ -693,10 +693,11 @@ print_result_row() {
     [[ "$asn" == "??" || "$asn" == "null" ]] && asn=""
     [[ "$isp" == "null" ]] && isp="Unknown"
     if [[ -z "$asn" ]]; then asn_isp="$isp"; else asn_isp="AS${asn} ${isp}"; fi
-    latency_disp="$(format_latency "$latency")"
     if [[ "$is_split" == "1" ]]; then
-        printf "      %b  %s%-24s  %-15s  %b  %-3s  %-34s  ⮜ 分流%s\n" "$marker" "$YELLOW" "$domain" "$ip" "$latency_disp" "$cc" "${asn_isp:0:34}" "$R"
+        latency_disp="$(printf '%s%s%s' "$YELLOW" "$(format_latency_text "$latency")" "$R")"
+        printf "      %b  %s%-24s  %-15s  %b  %s%-3s  %-34s  ⮜ 分流%s\n" "$marker" "$YELLOW" "$domain" "$ip" "$latency_disp" "$YELLOW" "$cc" "${asn_isp:0:34}" "$R"
     else
+        latency_disp="$(format_latency "$latency")"
         printf "      %b  %-24s  %-15s  %b  %-3s  %s%s%s\n" "$marker" "$domain" "$ip" "$latency_disp" "$cc" "$DIM" "${asn_isp:0:34}" "$R"
     fi
 }
